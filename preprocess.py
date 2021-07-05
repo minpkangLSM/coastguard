@@ -88,7 +88,7 @@ class meta_info :
             frame_meta_list.append(frame_dict)
 
         # dict to csv format file
-        with open("test.csv", "w", encoding='UTF-8', newline='', ) as f:
+        with open("test_2.csv", "w", encoding='UTF-8', newline='', ) as f:
             writer = csv.DictWriter(f, fieldnames=meta_list)
             writer.writeheader()
             for data in frame_meta_list:
@@ -98,14 +98,15 @@ class meta_info :
 
     def interpolation(self,
                       input,
-                      output):
+                      output,
+                      interpolation=False):
 
         # input
         f = open(input, 'r', encoding='UTF-8', newline="")
         f = csv.reader(f)
 
         # pattern reg.
-        Loc_p = re.compile('(\d{2,3})(\D+)(\d{2,3})(\D+)(\d{2,3})')  # Tlat, Tlon, ALat, Alon, Az, El
+        Loc_p = re.compile('(\d{1,3})(\D+)(\d{1,3})(\D+)(\d{1,3})')  # Tlat, Tlon, ALat, Alon, Az, El
         Pos_p = re.compile('([+-]?\d{1,3})(\D*)(\d{1,3})')  # Az, El
         Date_p = re.compile('(\d{2})-([a-zA-Z]{3})-(\d{4})')  # Date
         Time_p = re.compile("(\d{2}):(\d{2}):(\d{2})")  # Time
@@ -116,7 +117,6 @@ class meta_info :
         temp_meta = [] # 연산이 가능한 형태(튜플)로 저장된 값
 
         for idx, line in enumerate(f) :
-
             re_frame_dict = {} # 현재 decoding하고 있는 값
             if idx == 0 : continue # 맨 처음 열은 열 별 이름이므로 패스
 
@@ -157,150 +157,149 @@ class meta_info :
             re_frame_dict[meta_list[8]] = Date
             re_frame_dict[meta_list[9]] = Time
 
-            if idx == 1 :
-                first_err_keys = [key for key, value in re_frame_dict.items() if value == None]
-                if first_err_keys == [] : first_err_keys == None
-                interpolated_meta.append(re_frame_dict)
-                before_meta_info = re_frame_dict
+            if interpolation :
 
-            elif idx == 2 :
-                # idx1 값은 idx2 값으로 보정
-                for f_err_key in first_err_keys :
-                    if re_frame_dict[f_err_key] != None :
-                        interpolated_meta[0][f_err_key] = re_frame_dict[f_err_key]
-                    else : pass
-                interpolated_meta.append(re_frame_dict)
-                before_meta_info = re_frame_dict
+                if idx == 1 :
+                    first_err_keys = [key for key, value in re_frame_dict.items() if value == None]
+                    if first_err_keys == [] : first_err_keys == None
+                    interpolated_meta.append(re_frame_dict)
+                    before_meta_info = re_frame_dict
 
-            # # temp
-            # elif idx == len(f):
-            #     interpolated_meta.append(re_frame_dict)
+                elif idx == 2 :
+                    # idx1 값은 idx2 값으로 보정
+                    for f_err_key in first_err_keys :
+                        if re_frame_dict[f_err_key] != None :
+                            interpolated_meta[0][f_err_key] = re_frame_dict[f_err_key]
+                        else : pass
+                    interpolated_meta.append(re_frame_dict)
+                    before_meta_info = re_frame_dict
 
-            elif idx > 2 :
-                print("IDX : ", idx)
-                interpolated_meta.append(re_frame_dict)
-                Err_idxs = []
-                Err_keys = []
-                temp_idx = 0
-                for key, value in before_meta_info.items() :
-                    if value == None :
-                        Err_idxs.append(temp_idx)
-                        Err_keys.append(key)
-                    temp_idx += 1
-                if len(Err_idxs) == 8 : break
+                elif idx > 2 :
+                    interpolated_meta.append(re_frame_dict)
+                    Err_idxs = []
+                    Err_keys = []
+                    temp_idx = 0
+                    for key, value in before_meta_info.items() :
+                        if value == None :
+                            Err_idxs.append(temp_idx)
+                            Err_keys.append(key)
+                        temp_idx += 1
+                    if len(Err_idxs) == 8 : break # over last index
 
-                for e_idx, e_key in zip(Err_idxs, Err_keys) :
-                    current_value = temp_meta[-1][e_idx]
-                    before_before_value = temp_meta[idx-3][e_idx]
+                    for e_idx, e_key in zip(Err_idxs, Err_keys) :
+                        current_value = temp_meta[-1][e_idx]
+                        before_before_value = temp_meta[idx-3][e_idx]
 
-                    if e_idx == 1 or e_idx == 2 or e_idx == 4 or e_idx == 5 or e_idx == 9 :
-                        switch = False
-                        if current_value != [] and before_before_value != [] :
-                            switch = True
-                            first = (int(current_value[0][0]) + int(before_before_value[0][0]))//2
-                            second = (int(current_value[0][2]) + int(before_before_value[0][2]))//2
-                            third = (int(current_value[0][4]) + int(before_before_value[0][4]))//2
+                        if e_idx == 1 or e_idx == 2 or e_idx == 4 or e_idx == 5 :
+                            switch = False
+                            if current_value != [] and before_before_value != [] :
+                                switch = True
+                                print(current_value, before_before_value)
+                                first = (int(current_value[0][0]) + int(before_before_value[0][0]))//2
+                                second = (int(current_value[0][2]) + int(before_before_value[0][2]))//2
+                                third = (int(current_value[0][4]) + int(before_before_value[0][4]))//2
 
-                        elif current_value == [] and before_before_value != []:
-                            switch = True
-                            first = int(before_before_value[0][0])
-                            second = int(before_before_value[0][2])
-                            third = int(before_before_value[0][4])
+                            elif current_value == [] and before_before_value != []:
+                                switch = True
+                                first = int(before_before_value[0][0])
+                                second = int(before_before_value[0][2])
+                                third = int(before_before_value[0][4])
 
-                        elif current_value != [] and before_before_value == []:
-                            switch = True
-                            first = int(current_value[0][0])
-                            second = int(current_value[0][2])
-                            third = int(current_value[0][4])
+                            elif current_value != [] and before_before_value == []:
+                                switch = True
+                                first = int(current_value[0][0])
+                                second = int(current_value[0][2])
+                                third = int(current_value[0][4])
 
-                        if switch :
-                            if e_idx == 1 or e_idx == 2 or e_idx == 4 or e_idx == 5:
-                                interpolated_meta[idx - 2][e_key] = str(first) + '°' + str(second) + '.' + str(third) + "'"
+                            if switch :
+                                if e_idx == 1 or e_idx == 2 or e_idx == 4 or e_idx == 5:
+                                    interpolated_meta[idx - 2][e_key] = str(first) + '°' + str(second) + '.' + str(third) + "'"
+                                    # temp 보정
+                                    temp_meta[idx - 2][e_idx] = [(str(first), '°', str(second), '.', str(third))]
+                                if e_idx == 9:
+                                    interpolated_meta[idx - 2][e_key] = str(first) + ':' + str(second) + ':' + str(third) + "'"
+                                    # temp 보정
+                                    temp_meta[idx - 2][e_idx] = [(str(first), str(second), str(third))]
+
+                        if e_idx == 8 :
+                            switch = False
+                            if current_value != [] and before_before_value != []:
+                                switch = True
+                                first = (int(current_value[0][0]) + int(before_before_value[0][0])) // 2
+                                second = current_value[0][1]
+                                third = (int(current_value[0][2]) + int(before_before_value[0][2])) // 2
+
+                            elif current_value == [] and before_before_value != []:
+                                switch = True
+                                first = int(before_before_value[0][0])
+                                second = before_before_value[0][1]
+                                third = int(before_before_value[0][2])
+
+                            elif current_value != [] and before_before_value == []:
+                                switch = True
+                                first = int(current_value[0][0])
+                                second = current_value[0][1]
+                                third = int(current_value[0][2])
+                            if switch :
+                                interpolated_meta[idx-2][e_key] = str(first)+'-'+str(second)+'-'+str(third)
                                 # temp 보정
-                                temp_meta[idx - 2][e_idx] = [(str(first)), '°', str(second), '.', str(third)]
-                            if e_idx == 9:
-                                interpolated_meta[idx - 2][e_key] = str(first) + ':' + str(second) + ':' + str(third) + "'"
+                                temp_meta[idx-2][e_idx] = [(str(first), str(second), str(third))]
+
+                        if e_idx == 9 :
+                            switch = False
+                            if current_value != [] and before_before_value != []:
+                                switch = True
+                                first = (int(current_value[0][0]) + int(before_before_value[0][0])) // 2
+                                second = (int(current_value[0][1]) + int(before_before_value[0][1])) // 2
+                                third = (int(current_value[0][2]) + int(before_before_value[0][2])) // 2
+
+                            elif current_value == [] and before_before_value != []:
+                                switch = True
+                                first = int(before_before_value[0][0])
+                                second = int(before_before_value[0][2])
+                                third = int(before_before_value[0][4])
+
+                            elif current_value != [] and before_before_value == []:
+                                switch = True
+                                first = int(current_value[0][0])
+                                second = int(current_value[0][2])
+                                third = int(current_value[0][4])
+                            if switch :
+                                interpolated_meta[idx-2][e_key] = str(first)+':'+str(second)+':'+str(third)
                                 # temp 보정
-                                temp_meta[idx - 2][e_idx] = [(str(first)), str(second), str(third)]
+                                temp_meta[idx-2][e_idx] = [(str(first), str(second), str(third))]
 
-                    if e_idx == 8 :
-                        switch = False
-                        if current_value != [] and before_before_value != []:
-                            switch = True
-                            first = (int(current_value[0][0]) + int(before_before_value[0][0])) // 2
-                            second = current_value[0][1]
-                            third = (int(current_value[0][2]) + int(before_before_value[0][2])) // 2
+                        if e_idx == 6 or e_idx == 7 :
 
-                        elif current_value == [] and before_before_value != []:
-                            switch = True
-                            first = int(before_before_value[0][0])
-                            second = before_before_value[0][1]
-                            third = int(before_before_value[0][2])
-
-                        elif current_value != [] and before_before_value == []:
-                            switch = True
-                            first = int(current_value[0][0])
-                            second = current_value[0][1]
-                            third = int(current_value[0][2])
-                        if switch :
-                            interpolated_meta[idx-2][e_key] = str(first)+'-'+str(second)+'-'+str(third)
-                            # temp 보정
-                            temp_meta[idx-2][e_idx] = [(str(first)), str(second), str(third)]
-
-                    if e_idx == 9 :
-                        switch = False
-                        if current_value != [] and before_before_value != []:
-                            switch = True
-                            first = (int(current_value[0][0]) + int(before_before_value[0][0])) // 2
-                            second = (int(current_value[0][1]) + int(before_before_value[0][1])) // 2
-                            third = (int(current_value[0][2]) + int(before_before_value[0][2])) // 2
-
-                        elif current_value == [] and before_before_value != []:
-                            switch = True
-                            first = int(before_before_value[0][0])
-                            second = int(before_before_value[0][2])
-                            third = int(before_before_value[0][4])
-
-                        elif current_value != [] and before_before_value == []:
-                            switch = True
-                            first = int(current_value[0][0])
-                            second = int(current_value[0][2])
-                            third = int(current_value[0][4])
-                        if switch :
-                            interpolated_meta[idx-2][e_key] = str(first)+':'+str(second)+':'+str(third)
-                            # temp 보정
-                            temp_meta[idx-2][e_idx] = [(str(first)), str(second), str(third)]
-
-                    if e_idx == 6 or e_idx == 7 :
-
-                        switch = False
-                        if current_value != [] and before_before_value != []:
-                            switch = True
-                            first = (int(current_value[0][0]) + int(before_before_value[0][0]))/2
-                            second = (int(current_value[0][2]) + int(before_before_value[0][2]))//2
-                            if first < 0 :
-                                first = math.ceil(first)
-                                first = int(first)
-                            else :
-                                first = int(first)
+                            switch = False
+                            if current_value != [] and before_before_value != []:
+                                switch = True
+                                first = (int(current_value[0][0]) + int(before_before_value[0][0]))/2
+                                second = (int(current_value[0][2]) + int(before_before_value[0][2]))//2
+                                if first < 0 :
+                                    first = math.ceil(first)
+                                    first = int(first)
+                                else :
+                                    first = int(first)
 
 
-                        elif current_value == [] and before_before_value != []:
-                            switch = True
-                            first = int(before_before_value[0][0])
-                            second = int(before_before_value[0][2])
+                            elif current_value == [] and before_before_value != []:
+                                switch = True
+                                first = int(before_before_value[0][0])
+                                second = int(before_before_value[0][2])
 
-                        elif current_value != [] and before_before_value == []:
-                            switch = True
-                            first = int(current_value[0][0])
-                            second = int(current_value[0][2])
+                            elif current_value != [] and before_before_value == []:
+                                switch = True
+                                first = int(current_value[0][0])
+                                second = int(current_value[0][2])
 
-                        if switch :
-                            # temp 보정
-                            interpolated_meta[idx - 2][e_key] = str(first) + "." + str(second) + '°'
-                            temp_meta[idx-2][e_idx] = [(str(first), '.', str(second))]
-                before_meta_info = re_frame_dict
-
+                            if switch :
+                                # temp 보정
+                                interpolated_meta[idx - 2][e_key] = str(first) + "." + str(second) + '°'
+                                temp_meta[idx-2][e_idx] = [(str(first), '.', str(second))]
+                    before_meta_info = re_frame_dict
+            else :
+                interpolated_meta.append(re_frame_dict)
         with open(output, "w", encoding='UTF-8-sig', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=meta_list)
             writer.writeheader()
@@ -308,8 +307,9 @@ class meta_info :
                 writer.writerow(data)
             print("FINISHED.")
 
-dict = "E:\\2021_coastguard\\coastguard_git\\test.csv"
+dict = "E:\\2021_coastguard\\coastguard_git\\test_2.csv"
 i = meta_info()
-# i.geo_info(frame_folder_dir="E:\\2021_coastguard\\frame\\test")
+# i.geo_info(frame_folder_dir="E:\\2021_coastguard\\frame\\REC-20_11_11_14_14_48 (4-19-2021 11-34-31 AM)")
 i.interpolation(input=dict,
-                output="E:\\2021_coastguard\\coastguard_git\\test_interpolated.csv")
+                output="E:\\2021_coastguard\\coastguard_git\\test_2_not_interpolated.csv",
+                interpolation=True)
