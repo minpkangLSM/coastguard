@@ -4,10 +4,41 @@ import math
 import csv
 import re
 import cv2
+import numpy as np
+import math
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 class meta_info :
+
+    @staticmethod
+    def frame_classifier(img_dir, avg_threshold=1.5, std_threshold=0.5):
+
+        frame = cv2.imread(img_dir, cv2.COLOR_RGB2BGR)
+        frame_parts = frame[26:666, :, :]
+
+        # # intensity
+        # intensity = np.mean(frame_parts)
+
+        # statistics
+        b_avg = np.mean(frame_parts[:, :, 0])
+        g_avg = np.mean(frame_parts[:, :, 1])
+        r_avg = np.mean(frame_parts[:, :, 2])
+        avg_std = np.std([b_avg, g_avg, r_avg])
+
+        b_std = np.std(frame_parts[:, :, 0])
+        g_std = np.std(frame_parts[:, :, 1])
+        r_std = np.std(frame_parts[:, :, 2])
+        std_std = np.std([b_std, g_std, r_std])
+
+        if avg_std < avg_threshold:
+
+            if std_std < std_threshold: img = "THR"
+            else: img = "RGB"
+
+        else: img = "RGB"
+
+        return img
 
     def geo_info(self,
                  frame_folder_dir,
@@ -15,13 +46,14 @@ class meta_info :
 
         # frame meta dict
         frame_meta_list = []
-        meta_list = ["name", "Tlat", "Tlon", "Rng", "Alat", "Alon", "Az", "El", "Date", "Time"]
+        meta_list = ["name", "Tlat", "Tlon", "Rng", "Alat", "Alon", "Az", "El", "Date", "Time", "img"]
 
         # frame folder dir generation
         frame_nm_list = os.listdir(frame_folder_dir)
         for frame_nm in tqdm(frame_nm_list) :
 
             frame_dir = os.path.join(frame_folder_dir, frame_nm)
+            img = meta_info.frame_classifier(img_dir=frame_dir)
 
             frame = cv2.imread(frame_dir, cv2.IMREAD_GRAYSCALE)
             # frame = np.array(Image.open(frame_dir))
@@ -32,55 +64,57 @@ class meta_info :
             Rng = frame[668:690, 537:958]
             Alat = frame[697:716, 75:215]
             Alon = frame[697:716, 341:488]
-            Az = frame[697:716, 750:860]
-            El = frame[697:716, 910:990]
+            Az = frame[697:716, 770:845]
+            El = frame[697:716, 918:989]
             Date = frame[697:716, 1010:1160]
             Time = frame[697:716, 1160:1277]
 
             # save meta info of a frame in dict type
             frame_dict = {}
             frame_dict[meta_list[0]] = frame_nm
+            frame_dict[meta_list[10]] = img
 
-            frame_dict[meta_list[1]] = pytesseract.image_to_string(Tlat, lang=None, config='--psm 6')
+            frame_dict[meta_list[1]] = pytesseract.image_to_string(Tlat, lang=None, config='--psm 8')
             if frame_dict[meta_list[1]] == "" :
                 frame_dict[meta_list[1]] = "None"
                 print("Tlat None")
 
-            frame_dict[meta_list[2]] = pytesseract.image_to_string(Tlon, lang=None, config='--psm 6')
+            frame_dict[meta_list[2]] = pytesseract.image_to_string(Tlon, lang=None, config='--psm 8')
             if frame_dict[meta_list[2]] == "" :
                 frame_dict[meta_list[2]] = "None"
                 print("Tlon None")
 
-            frame_dict[meta_list[3]] = pytesseract.image_to_string(Rng, lang=None, config='--psm 6')
+            frame_dict[meta_list[3]] = pytesseract.image_to_string(Rng, lang=None, config='--psm 8')
             if frame_dict[meta_list[3]] == "" :
                 frame_dict[meta_list[3]] = "None"
                 print("Rng None")
-            frame_dict[meta_list[4]] = pytesseract.image_to_string(Alat, lang=None, config='--psm 6')
+
+            frame_dict[meta_list[4]] = pytesseract.image_to_string(Alat, lang=None, config='--psm 8')
             if frame_dict[meta_list[4]] == "" :
                 frame_dict[meta_list[4]] = "None"
                 print("Alat None")
 
-            frame_dict[meta_list[5]] = pytesseract.image_to_string(Alon, lang=None, config='--psm 6')
+            frame_dict[meta_list[5]] = pytesseract.image_to_string(Alon, lang=None, config='--psm 8')
             if frame_dict[meta_list[5]] == "" :
                 frame_dict[meta_list[5]] = "None"
                 print("Alon None")
 
-            frame_dict[meta_list[6]] = pytesseract.image_to_string(Az, lang=None, config='--psm 6')
+            frame_dict[meta_list[6]] = pytesseract.image_to_string(Az, lang=None, config='--psm 8')
             if frame_dict[meta_list[6]] == "" :
                 frame_dict[meta_list[6]] = "None"
                 print("Az None")
 
-            frame_dict[meta_list[7]] = pytesseract.image_to_string(El, lang=None, config='--psm 6')
+            frame_dict[meta_list[7]] = pytesseract.image_to_string(El, lang=None, config='--psm 8')
             if frame_dict[meta_list[7]] == "" :
                 frame_dict[meta_list[7]] = "None"
                 print("El None")
 
-            frame_dict[meta_list[8]] = pytesseract.image_to_string(Date, lang=None, config='--psm 6')
+            frame_dict[meta_list[8]] = pytesseract.image_to_string(Date, lang=None, config='--psm 8')
             if frame_dict[meta_list[8]] == "" :
                 frame_dict[meta_list[8]] = "None"
                 print("Date None")
 
-            frame_dict[meta_list[9]] = pytesseract.image_to_string(Time, lang=None, config='--psm 6')
+            frame_dict[meta_list[9]] = pytesseract.image_to_string(Time, lang=None, config='--psm 8')
             if frame_dict[meta_list[9]] == "" :
                 frame_dict[meta_list[9]] = "None"
                 print("Time None")
@@ -88,7 +122,7 @@ class meta_info :
             frame_meta_list.append(frame_dict)
 
         # dict to csv format file
-        with open("test_2.csv", "w", encoding='UTF-8', newline='', ) as f:
+        with open("E:\\2021_coastguard\\frame\\D\\extract_geoinfo_with_img.csv", "w", encoding='UTF-8', newline='', ) as f:
             writer = csv.DictWriter(f, fieldnames=meta_list)
             writer.writeheader()
             for data in frame_meta_list:
@@ -105,14 +139,14 @@ class meta_info :
         f = open(input, 'r', encoding='UTF-8', newline="")
         f = csv.reader(f)
 
-        # pattern reg.
+        # pattern reg
         Loc_p = re.compile('(\d{1,3})(\D+)(\d{1,3})(\D+)(\d{1,3})')  # Tlat, Tlon, ALat, Alon, Az, El
-        Pos_p = re.compile('([+-]?\d{1,3})(\D*)(\d{1,3})')  # Az, El
+        Pos_p = re.compile('([+-]?\d{1,2})(\D+)(\d{1,2})')  # Az, El
         Date_p = re.compile('(\d{2})-([a-zA-Z]{3})-(\d{4})')  # Date
         Time_p = re.compile("(\d{2}):(\d{2}):(\d{2})")  # Time
 
         # geo-data
-        meta_list = ["name", "Tlat", "Tlon", "Rng", "Alat", "Alon", "Az", "El", "Date", "Time"]
+        meta_list = ["name", "Tlat", "Tlon", "Rng", "Alat", "Alon", "Az", "El", "Date", "Time", "Img"]
         interpolated_meta = [] # 최종결과값 (str 타입으로 변환된 값 - 연산이 불가능한 형태라고 가정)
         temp_meta = [] # 연산이 가능한 형태(튜플)로 저장된 값
 
@@ -144,162 +178,163 @@ class meta_info :
             Time_re = re.findall(Time_p, line[9])
             if Time_re != [] : Time = str(Time_re[0][0])+":"+str(Time_re[0][1])+":"+str(Time_re[0][2])
             else : Time = None
+            temp_meta.append([line[0], Tlat_re, Tlon_re, line[3], Alat_re, Alon_re, Az_re, El_re, Date_re, Time_re])
+        print(temp_meta)
+        interval = np.zeros((10))
+        for idx in range(len(temp_meta)):
+            # Tlat
+            if temp_meta[idx][1] == [] and interval[1] == 0:
+                interval[1] += 1
+                Tlat_head = idx
+            elif temp_meta[idx][1] == [] and interval[1] != 0:
+                interval[1] += 1
+            elif temp_meta[idx][1] != [] and interval[1] != 0:
+                front = float(temp_meta[Tlat_head-1][1][0][0])+float(temp_meta[Tlat_head-1][1][0][2]+"."+temp_meta[Tlat_head-1][1][0][4])/60.
+                rear = float(temp_meta[idx][1][0][0])+float(temp_meta[idx][1][0][2]+"."+temp_meta[idx][1][0][4])/60.
+                gap = rear - front
+                interval_gap = gap / interval[1]
+                for i in range(int(interval[1])) :
+                    value = front+interval_gap*(i+1)
+                    first = math.floor(value)
+                    second = math.floor((value-first)*60)
+                    third = math.floor(((value-first)*60-second)*100)
+                    Tlat = [(str(first), '°', str(second), '.', str(third))]
+                    temp_meta[Tlat_head+i][1] = Tlat
+                interval[1] = 0
 
-            temp_meta.append([None, Tlon_re, Tlat_re, None, Alat_re, Alon_re, Az_re, El_re, Date_re, Time_re])
-            re_frame_dict[meta_list[0]] = line[0] # Not interpolation target
-            re_frame_dict[meta_list[1]] = Tlat
-            re_frame_dict[meta_list[2]] = Tlon
-            re_frame_dict[meta_list[3]] = line[3] # Not interpolation target
-            re_frame_dict[meta_list[4]] = Alat
-            re_frame_dict[meta_list[5]] = Alon
-            re_frame_dict[meta_list[6]] = Az
-            re_frame_dict[meta_list[7]] = El
-            re_frame_dict[meta_list[8]] = Date
-            re_frame_dict[meta_list[9]] = Time
+            # Tlon
+            if temp_meta[idx][2] == [] and interval[2] == 0:
+                interval[2] += 1
+                Tlon_head = idx
+            elif temp_meta[idx][2] == [] and interval[2] != 0:
+                interval[2] += 1
+            elif temp_meta[idx][2] != [] and interval[2] != 0:
+                front = float(temp_meta[Tlon_head - 1][2][0][0]) + \
+                        float(temp_meta[Tlon_head - 1][2][0][2] + "." + temp_meta[Tlon_head - 1][2][0][4]) / 60.
+                rear = float(temp_meta[idx][2][0][0]) + \
+                       float(temp_meta[idx][2][0][2] + "." + temp_meta[idx][2][0][4]) / 60.
+                gap = rear - front
+                interval_gap = gap / interval[2]
+                for i in range(int(interval[2])):
+                    value = front + interval_gap * (i + 1)
+                    first = math.floor(value)
+                    second = math.floor((value - first) * 60)
+                    third = math.floor(((value - first) * 60 - second) * 100)
+                    Tlat = [(str(first), '°', str(second), '.', str(third))]
+                    temp_meta[Tlon_head + i][2] = Tlat
+                interval[2] = 0
 
-            if interpolation :
+            # Alon
+            if temp_meta[idx][4] == [] and interval[4] == 0:
+                interval[4] += 1
+                Alon_head = idx
+            elif temp_meta[idx][4] == [] and interval[4] != 0:
+                interval[4] += 1
+            elif temp_meta[idx][4] != [] and interval[4] != 0:
+                front = float(temp_meta[Tlon_head - 1][4][0][0]) + \
+                        float(temp_meta[Tlon_head - 1][4][0][2] + "." + temp_meta[Tlon_head - 1][4][0][4]) / 60.
+                rear = float(temp_meta[idx][4][0][0]) + \
+                        float(temp_meta[idx][4][0][2] + "." + temp_meta[idx][4][0][4]) / 60.
+                gap = rear - front
+                interval_gap = gap / interval[4]
+                for i in range(int(interval[4])):
+                    value = front + interval_gap * (i + 1)
+                    first = math.floor(value)
+                    second = math.floor((value - first) * 60)
+                    third = math.floor(((value - first) * 60 - second) * 100)
+                    Alon = [(str(first), '°', str(second), '.', str(third))]
+                    temp_meta[Alon_head + i][4] = Alon
+                interval[4] = 0
 
-                if idx == 1 :
-                    first_err_keys = [key for key, value in re_frame_dict.items() if value == None]
-                    if first_err_keys == [] : first_err_keys == None
-                    interpolated_meta.append(re_frame_dict)
-                    before_meta_info = re_frame_dict
+            # Alat
+            if temp_meta[idx][5] == [] and interval[5] == 0:
+                interval[5] += 1
+                Alat_head = idx
+            elif temp_meta[idx][5] == [] and interval[5] != 0:
+                interval[5] += 1
+            elif temp_meta[idx][5] != [] and interval[5] != 0:
+                front = float(temp_meta[Tlon_head - 1][5][0][0]) + \
+                        float(temp_meta[Tlon_head - 1][5][0][2] + "." + temp_meta[Tlon_head - 1][5][0][4]) / 60.
+                rear = float(temp_meta[idx][5][0][0]) + \
+                        float(temp_meta[idx][5][0][2] + "." + temp_meta[idx][5][0][4]) / 60.
+                gap = rear - front
+                interval_gap = gap / interval[5]
+                for i in range(int(interval[5])):
+                    value = front + interval_gap * (i + 1)
+                    first = math.floor(value)
+                    second = math.floor((value - first) * 60)
+                    third = math.floor(((value - first) * 60 - second) * 100)
+                    Alat = [(str(first), '°', str(second), '.', str(third))]
+                    temp_meta[Alat_head + i][5] = Alat
+                interval[5] = 0
 
-                elif idx == 2 :
-                    # idx1 값은 idx2 값으로 보정
-                    for f_err_key in first_err_keys :
-                        if re_frame_dict[f_err_key] != None :
-                            interpolated_meta[0][f_err_key] = re_frame_dict[f_err_key]
-                        else : pass
-                    interpolated_meta.append(re_frame_dict)
-                    before_meta_info = re_frame_dict
+            # Az
+            if temp_meta[idx][6] == [] and interval[6] == 0:
+                interval[6] += 1
+                Az_head = idx
+            elif temp_meta[idx][6] == [] and interval[6] != 0:
+                interval[6] += 1
+            elif temp_meta[idx][6] != [] and interval[6] != 0:
+                front = float(temp_meta[Az_head - 1][6][0][0]) + float(temp_meta[Az_head - 1][6][0][2])/10
+                rear = float(temp_meta[idx][6][0][0]) + float(temp_meta[idx][6][0][2])/10
+                gap = rear - front
+                interval_gap = gap / interval[6]
+                for i in range(int(interval[6])):
+                    value = str(front + interval_gap * (i + 1)).split(".")
+                    first = value[0]
+                    second = value[1]
+                    Az = [(str(first), '.', str(second))]
+                    temp_meta[Az_head + i][6] = Az
+                interval[6] = 0
+            # El
+            if temp_meta[idx][7] == [] and interval[7] == 0:
+                interval[7] += 1
+                El_head = idx
+            elif temp_meta[idx][7] == [] and interval[7] != 0:
+                interval[7] += 1
+            elif temp_meta[idx][7] != [] and interval[7] != 0:
+                front = float(temp_meta[El_head - 1][7][0][0]) + float(temp_meta[El_head - 1][7][0][2]) / 10.
+                rear = float(temp_meta[idx][7][0][0]) + float(temp_meta[idx][7][0][2]) / 10.
+                gap = rear - front
+                interval_gap = gap / interval[7]
+                for i in range(int(interval[7])):
+                    value = str(front + interval_gap * (i + 1)).split(".")
+                    first = value[0]
+                    second = value[1]
+                    El = [(str(first), '.', str(second))]
+                    print("El : ", El)
+                    temp_meta[El_head + i][7] = El
+                interval[7] = 0
 
-                elif idx > 2 :
-                    interpolated_meta.append(re_frame_dict)
-                    Err_idxs = []
-                    Err_keys = []
-                    temp_idx = 0
-                    for key, value in before_meta_info.items() :
-                        if value == None :
-                            Err_idxs.append(temp_idx)
-                            Err_keys.append(key)
-                        temp_idx += 1
-                    if len(Err_idxs) == 8 : break # over last index
+        for inter_idx in range(len(temp_meta)):
+            re_frame_dict = {}
+            re_frame_dict[meta_list[0]] = temp_meta[inter_idx][0]
+            re_frame_dict[meta_list[1]] = str(temp_meta[inter_idx][1][0][0]) + \
+                                          "°" + str(temp_meta[inter_idx][1][0][2]) + \
+                                          "." + str(temp_meta[inter_idx][1][0][4]) + "'"
+            re_frame_dict[meta_list[2]] = str(temp_meta[inter_idx][2][0][0]) + \
+                                          "°" + str(temp_meta[inter_idx][2][0][2]) + \
+                                          "." + str(temp_meta[inter_idx][2][0][4]) + "'"
+            re_frame_dict[meta_list[3]] = temp_meta[inter_idx][3]
+            re_frame_dict[meta_list[4]] = str(temp_meta[inter_idx][4][0][0]) + \
+                                          "°" + str(temp_meta[inter_idx][4][0][2]) + \
+                                          "." + str(temp_meta[inter_idx][4][0][4]) + "'"
+            re_frame_dict[meta_list[5]] = str(temp_meta[inter_idx][5][0][0]) + \
+                                          "°" + str(temp_meta[inter_idx][5][0][2]) + \
+                                          "." + str(temp_meta[inter_idx][5][0][4]) + "'"
+            re_frame_dict[meta_list[6]] = str(temp_meta[inter_idx][6][0][0]) + \
+                                          "." + str(temp_meta[inter_idx][6][0][2]) + "°"
+            print(inter_idx, temp_meta[inter_idx][7])
+            re_frame_dict[meta_list[7]] = str(temp_meta[inter_idx][7][0][0]) + \
+                                          "." + str(temp_meta[inter_idx][7][0][2]) + "°"
+            re_frame_dict[meta_list[8]] = str(temp_meta[inter_idx][8][0][0]) + \
+                                          "-" + str(temp_meta[inter_idx][8][0][1]) + \
+                                          "-" + str(temp_meta[inter_idx][8][0][2])
+            re_frame_dict[meta_list[9]] = str(temp_meta[inter_idx][9][0][0]) + \
+                                          ":" + str(temp_meta[inter_idx][9][0][1]) + \
+                                          ":" + str(temp_meta[inter_idx][9][0][2])
 
-                    for e_idx, e_key in zip(Err_idxs, Err_keys) :
-                        current_value = temp_meta[-1][e_idx]
-                        before_before_value = temp_meta[idx-3][e_idx]
-
-                        if e_idx == 1 or e_idx == 2 or e_idx == 4 or e_idx == 5 :
-                            switch = False
-                            if current_value != [] and before_before_value != [] :
-                                switch = True
-                                print(current_value, before_before_value)
-                                first = (int(current_value[0][0]) + int(before_before_value[0][0]))//2
-                                second = (int(current_value[0][2]) + int(before_before_value[0][2]))//2
-                                third = (int(current_value[0][4]) + int(before_before_value[0][4]))//2
-
-                            elif current_value == [] and before_before_value != []:
-                                switch = True
-                                first = int(before_before_value[0][0])
-                                second = int(before_before_value[0][2])
-                                third = int(before_before_value[0][4])
-
-                            elif current_value != [] and before_before_value == []:
-                                switch = True
-                                first = int(current_value[0][0])
-                                second = int(current_value[0][2])
-                                third = int(current_value[0][4])
-
-                            if switch :
-                                if e_idx == 1 or e_idx == 2 or e_idx == 4 or e_idx == 5:
-                                    interpolated_meta[idx - 2][e_key] = str(first) + '°' + str(second) + '.' + str(third) + "'"
-                                    # temp 보정
-                                    temp_meta[idx - 2][e_idx] = [(str(first), '°', str(second), '.', str(third))]
-                                if e_idx == 9:
-                                    interpolated_meta[idx - 2][e_key] = str(first) + ':' + str(second) + ':' + str(third) + "'"
-                                    # temp 보정
-                                    temp_meta[idx - 2][e_idx] = [(str(first), str(second), str(third))]
-
-                        if e_idx == 8 :
-                            switch = False
-                            if current_value != [] and before_before_value != []:
-                                switch = True
-                                first = (int(current_value[0][0]) + int(before_before_value[0][0])) // 2
-                                second = current_value[0][1]
-                                third = (int(current_value[0][2]) + int(before_before_value[0][2])) // 2
-
-                            elif current_value == [] and before_before_value != []:
-                                switch = True
-                                first = int(before_before_value[0][0])
-                                second = before_before_value[0][1]
-                                third = int(before_before_value[0][2])
-
-                            elif current_value != [] and before_before_value == []:
-                                switch = True
-                                first = int(current_value[0][0])
-                                second = current_value[0][1]
-                                third = int(current_value[0][2])
-                            if switch :
-                                interpolated_meta[idx-2][e_key] = str(first)+'-'+str(second)+'-'+str(third)
-                                # temp 보정
-                                temp_meta[idx-2][e_idx] = [(str(first), str(second), str(third))]
-
-                        if e_idx == 9 :
-                            switch = False
-                            if current_value != [] and before_before_value != []:
-                                switch = True
-                                first = (int(current_value[0][0]) + int(before_before_value[0][0])) // 2
-                                second = (int(current_value[0][1]) + int(before_before_value[0][1])) // 2
-                                third = (int(current_value[0][2]) + int(before_before_value[0][2])) // 2
-
-                            elif current_value == [] and before_before_value != []:
-                                switch = True
-                                first = int(before_before_value[0][0])
-                                second = int(before_before_value[0][2])
-                                third = int(before_before_value[0][4])
-
-                            elif current_value != [] and before_before_value == []:
-                                switch = True
-                                first = int(current_value[0][0])
-                                second = int(current_value[0][2])
-                                third = int(current_value[0][4])
-                            if switch :
-                                interpolated_meta[idx-2][e_key] = str(first)+':'+str(second)+':'+str(third)
-                                # temp 보정
-                                temp_meta[idx-2][e_idx] = [(str(first), str(second), str(third))]
-
-                        if e_idx == 6 or e_idx == 7 :
-
-                            switch = False
-                            if current_value != [] and before_before_value != []:
-                                switch = True
-                                first = (int(current_value[0][0]) + int(before_before_value[0][0]))/2
-                                second = (int(current_value[0][2]) + int(before_before_value[0][2]))//2
-                                if first < 0 :
-                                    first = math.ceil(first)
-                                    first = int(first)
-                                else :
-                                    first = int(first)
-
-
-                            elif current_value == [] and before_before_value != []:
-                                switch = True
-                                first = int(before_before_value[0][0])
-                                second = int(before_before_value[0][2])
-
-                            elif current_value != [] and before_before_value == []:
-                                switch = True
-                                first = int(current_value[0][0])
-                                second = int(current_value[0][2])
-
-                            if switch :
-                                # temp 보정
-                                interpolated_meta[idx - 2][e_key] = str(first) + "." + str(second) + '°'
-                                temp_meta[idx-2][e_idx] = [(str(first), '.', str(second))]
-                    before_meta_info = re_frame_dict
-            else :
-                interpolated_meta.append(re_frame_dict)
+            interpolated_meta.append(re_frame_dict)
         with open(output, "w", encoding='UTF-8-sig', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=meta_list)
             writer.writeheader()
@@ -307,9 +342,8 @@ class meta_info :
                 writer.writerow(data)
             print("FINISHED.")
 
-dict = "E:\\2021_coastguard\\coastguard_git\\test_2.csv"
 i = meta_info()
-# i.geo_info(frame_folder_dir="E:\\2021_coastguard\\frame\\REC-20_11_11_14_14_48 (4-19-2021 11-34-31 AM)")
-i.interpolation(input=dict,
-                output="E:\\2021_coastguard\\coastguard_git\\test_2_not_interpolated.csv",
+# i.geo_info(frame_folder_dir="E:\\2021_coastguard\\frame\\D_frames")
+i.interpolation(input="E:\\2021_coastguard\\coastguard_git\\test_psm8.csv",
+                output="E:\\2021_coastguard\\coastguard_git\\test_psm8_interpolated.csv",
                 interpolation=True)
